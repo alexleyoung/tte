@@ -79,12 +79,12 @@ struct SettingsView: View {
     }
 
     private func resetToDefaults() {
-        settings.acceptKey = KeyBinding(keyCode: 48, modifiers: [], label: "Tab")
-        settings.acceptKeyAlt = KeyBinding(keyCode: 36, modifiers: [.control], label: "⌃Return")
-        settings.nextKey = KeyBinding(keyCode: 45, modifiers: [.control], label: "⌃N")
-        settings.previousKey = KeyBinding(keyCode: 35, modifiers: [.control], label: "⌃P")
-        settings.togglePopoverKey = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
-        settings.toggleServiceKey = KeyBinding(keyCode: 17, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
+        settings.acceptKey = KeyBinding(keyCode: KeyCode.tab, modifiers: [], label: "Tab")
+        settings.acceptKeyAlt = KeyBinding(keyCode: KeyCode.return, modifiers: [.control], label: "⌃Return")
+        settings.nextKey = KeyBinding(keyCode: KeyCode.n, modifiers: [.control], label: "⌃N")
+        settings.previousKey = KeyBinding(keyCode: KeyCode.p, modifiers: [.control], label: "⌃P")
+        settings.togglePopoverKey = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
+        settings.toggleServiceKey = KeyBinding(keyCode: KeyCode.t, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
         settings.saveSettings()
         recordingKey = nil
     }

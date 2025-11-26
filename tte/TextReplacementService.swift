@@ -16,7 +16,8 @@ class TextReplacementService: ObservableObject {
     private var eventMonitor: Any?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
-    private var toggleServiceMonitor: Any?
+    private var toggleServiceEventTap: CFMachPort?
+    private var toggleServiceRunLoopSource: CFRunLoopSource?
     private var currentBuffer = ""
     private let maxBufferLength = 50
 
@@ -26,7 +27,7 @@ class TextReplacementService: ObservableObject {
     private var selectedSuggestionIndex = 0
 
     private init() {
-        setupGlobalToggleMonitor()
+        setupToggleServiceEventTap()
     }
 
     func start() {
@@ -407,21 +408,56 @@ class TextReplacementService: ObservableObject {
         return AXIsProcessTrusted()
     }
 
-    private func setupGlobalToggleMonitor() {
-        // This monitor is always active to catch the toggle service shortcut
-        toggleServiceMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self = self else { return }
-            let settings = SettingsManager.shared
+    private func setupToggleServiceEventTap() {
+        // This event tap is always active to catch the toggle service shortcut
+        // even when the main service is disabled
+        let eventMask = (1 << CGEventType.keyDown.rawValue)
 
-            if settings.toggleServiceKey.matches(event: event) {
-                DispatchQueue.main.async {
-                    if self.isEnabled {
-                        self.stop()
-                    } else {
-                        self.start()
-                    }
+        guard let eventTap = CGEvent.tapCreate(
+            tap: .cghidEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: CGEventMask(eventMask),
+            callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+                guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
+                let service = Unmanaged<TextReplacementService>.fromOpaque(refcon).takeUnretainedValue()
+                return service.handleToggleServiceEventTap(proxy: proxy, type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else {
+            print("❌ FAILED to create toggle service event tap")
+            return
+        }
+
+        let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        CGEvent.tapEnable(tap: eventTap, enable: true)
+
+        self.toggleServiceEventTap = eventTap
+        self.toggleServiceRunLoopSource = runLoopSource
+    }
+
+    private func handleToggleServiceEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        guard type == .keyDown else {
+            return Unmanaged.passUnretained(event)
+        }
+
+        let nsEvent = NSEvent(cgEvent: event)
+        let settings = SettingsManager.shared
+
+        // Check for toggle service shortcut
+        if let nsEvent = nsEvent, settings.toggleServiceKey.matches(event: nsEvent) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if self.isEnabled {
+                    self.stop()
+                } else {
+                    self.start()
                 }
             }
+            return nil // Consume event
         }
+
+        return Unmanaged.passUnretained(event)
     }
 }

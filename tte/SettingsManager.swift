@@ -13,12 +13,12 @@ import Cocoa
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
 
-    @Published var acceptKey: KeyBinding = KeyBinding(keyCode: 48, modifiers: [], label: "Tab")
-    @Published var acceptKeyAlt: KeyBinding = KeyBinding(keyCode: 36, modifiers: [.control], label: "⌃Return")
-    @Published var nextKey: KeyBinding = KeyBinding(keyCode: 45, modifiers: [.control], label: "⌃N")
-    @Published var previousKey: KeyBinding = KeyBinding(keyCode: 35, modifiers: [.control], label: "⌃P")
-    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
-    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
+    @Published var acceptKey: KeyBinding = KeyBinding(keyCode: KeyCode.tab, modifiers: [], label: "Tab")
+    @Published var acceptKeyAlt: KeyBinding = KeyBinding(keyCode: KeyCode.return, modifiers: [.control], label: "⌃Return")
+    @Published var nextKey: KeyBinding = KeyBinding(keyCode: KeyCode.n, modifiers: [.control], label: "⌃N")
+    @Published var previousKey: KeyBinding = KeyBinding(keyCode: KeyCode.p, modifiers: [.control], label: "⌃P")
+    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
+    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: KeyCode.t, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
 
     private init() {
         loadSettings()
