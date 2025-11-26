@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 @main
 struct tteApp: App {
@@ -26,6 +27,7 @@ extension Notification.Name {
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
+    private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize the TextReplacementService singleton to set up global event tap
@@ -51,6 +53,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .togglePopover,
             object: nil
         )
+
+        // Observe service state changes to update icon color
+        TextReplacementService.shared.$isEnabled
+            .sink { [weak self] isEnabled in
+                self?.updateStatusIconColor(isEnabled: isEnabled)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func updateStatusIconColor(isEnabled: Bool) {
+        guard let button = statusItem?.button else { return }
+
+        let config = NSImage.SymbolConfiguration(paletteColors: isEnabled ? [.systemGreen] : [.labelColor])
+        button.image = NSImage(systemSymbolName: "face.smiling", accessibilityDescription: "Text to Emoji")?.withSymbolConfiguration(config)
     }
 
     @objc func handleLeftClick() {
