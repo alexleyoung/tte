@@ -10,6 +10,7 @@ import Carbon
 import Combine
 import Cocoa
 
+/// Manages keyboard shortcut settings and persists them to UserDefaults.
 class SettingsManager: ObservableObject {
     static let shared = SettingsManager()
 
@@ -17,8 +18,8 @@ class SettingsManager: ObservableObject {
     @Published var acceptKeyAlt: KeyBinding = KeyBinding(keyCode: KeyCode.return, modifiers: [.control], label: "⌃Return")
     @Published var nextKey: KeyBinding = KeyBinding(keyCode: KeyCode.n, modifiers: [.control], label: "⌃N")
     @Published var previousKey: KeyBinding = KeyBinding(keyCode: KeyCode.p, modifiers: [.control], label: "⌃P")
-    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
-    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: KeyCode.t, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
+    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: KeyCode.h, modifiers: [.control, .shift], label: "⌃⇧H")
+    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
 
     private init() {
         loadSettings()
@@ -83,11 +84,15 @@ class SettingsManager: ObservableObject {
     }
 }
 
+/// Represents a keyboard shortcut binding with a key code and modifier keys.
 struct KeyBinding: Codable, Equatable {
     let keyCode: UInt16
     let modifiers: [ModifierKey]
     let label: String
 
+    /// Checks if this key binding matches a given keyboard event.
+    /// - Parameter event: The NSEvent to check
+    /// - Returns: true if the event matches this binding
     func matches(event: NSEvent) -> Bool {
         guard event.keyCode == keyCode else { return false }
 

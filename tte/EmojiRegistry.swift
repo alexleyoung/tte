@@ -7,9 +7,12 @@
 
 import Foundation
 
+/// Registry of emoji shortcodes and their corresponding emoji characters.
+/// Uses Discord-compatible shortcode format (e.g., ":fire:" -> 🔥)
 class EmojiRegistry {
     static let shared = EmojiRegistry()
 
+    /// Dictionary mapping shortcodes to emoji characters
     let mappings: [String: String] = [
         // Smileys & Emotion
         ":grinning:": "😀",
@@ -302,10 +305,15 @@ class EmojiRegistry {
 
     private init() {}
 
+    /// Returns the emoji for a given shortcode.
+    /// - Parameter shortcut: The emoji shortcode (e.g., ":fire:")
+    /// - Returns: The emoji character, or nil if not found
     func getEmoji(for shortcut: String) -> String? {
         return mappings[shortcut]
     }
 
+    /// Returns all available shortcodes in alphabetical order.
+    /// - Returns: Sorted array of shortcode strings
     func getAllShortcuts() -> [String] {
         return Array(mappings.keys).sorted()
     }

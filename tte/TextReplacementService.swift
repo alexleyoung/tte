@@ -9,10 +9,17 @@ import Cocoa
 import Carbon
 import Combine
 
+/// Service responsible for monitoring keyboard input and replacing emoji shortcodes with actual emoji.
+/// This service uses CGEventTap to capture keyboard events globally across all applications.
 class TextReplacementService: ObservableObject {
     static let shared = TextReplacementService()
 
+    // MARK: - Published Properties
+
     @Published var isEnabled = false
+
+    // MARK: - Private Properties
+
     private var eventMonitor: Any?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -21,15 +28,23 @@ class TextReplacementService: ObservableObject {
     private var currentBuffer = ""
     private let maxBufferLength = 50
 
+    // MARK: - Autocomplete State
+
     private var autocompleteActive = false
     private var autocompletePrefix = ""
     private var suggestions: [EmojiSuggestion] = []
     private var selectedSuggestionIndex = 0
 
+    // MARK: - Initialization
+
     private init() {
         setupToggleServiceEventTap()
     }
 
+    // MARK: - Public Methods
+
+    /// Starts the text replacement service and begins monitoring keyboard input.
+    /// Requests accessibility permissions if not already granted.
     func start() {
         guard !isEnabled else { return }
 
@@ -49,6 +64,7 @@ class TextReplacementService: ObservableObject {
         isEnabled = true
     }
 
+    /// Stops the text replacement service and cleans up all event monitoring.
     func stop() {
         guard isEnabled else { return }
 
@@ -63,6 +79,14 @@ class TextReplacementService: ObservableObject {
         hideAutocomplete()
         isEnabled = false
     }
+
+    /// Checks if the app has accessibility permissions.
+    /// - Returns: true if permissions are granted, false otherwise
+    func checkAccessibilityPermissions() -> Bool {
+        return AXIsProcessTrusted()
+    }
+
+    // MARK: - Event Tap Management
 
     private func startEventTap() {
         let eventMask = (1 << CGEventType.keyDown.rawValue)
@@ -123,7 +147,7 @@ class TextReplacementService: ObservableObject {
         print("Event tap - keyCode: \(keyCode), flags: \(flags), chars: \(nsEvent?.characters ?? "nil")")
         #endif
 
-        // Check for toggle popover shortcut
+        // Check for toggle popover shortcut (also handled in toggleServiceEventTap for global access)
         if let nsEvent = nsEvent, settings.togglePopoverKey.matches(event: nsEvent) {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .togglePopover, object: nil)
@@ -131,8 +155,8 @@ class TextReplacementService: ObservableObject {
             return nil // Consume event
         }
 
-        // Note: Toggle service shortcut is handled by setupGlobalToggleMonitor()
-        // so it works even when the service is disabled
+        // Note: Toggle service and toggle popover shortcuts are also handled by
+        // setupToggleServiceEventTap() so they work even when the service is disabled
 
         // Check autocomplete shortcuts
         if autocompleteActive {
@@ -183,6 +207,8 @@ class TextReplacementService: ObservableObject {
         return Unmanaged.passUnretained(event)
     }
 
+    // MARK: - Keyboard Event Handling
+
     private func handleKeyEvent(_ event: NSEvent) {
         guard let characters = event.characters else { return }
 
@@ -222,6 +248,8 @@ class TextReplacementService: ObservableObject {
             checkForEmojiShortcut()
         }
     }
+
+    // MARK: - Autocomplete Management
 
     private func checkForAutocompleteStart() {
         if let lastColonIndex = currentBuffer.lastIndex(of: ":") {
@@ -330,6 +358,8 @@ class TextReplacementService: ObservableObject {
         }
     }
 
+    // MARK: - Emoji Replacement
+
     private func checkForEmojiShortcut() {
         for (shortcut, emoji) in EmojiRegistry.shared.mappings {
             if currentBuffer.hasSuffix(shortcut) {
@@ -359,6 +389,8 @@ class TextReplacementService: ObservableObject {
         currentBuffer.append(emoji)
     }
 
+    // MARK: - System Integration
+
     private func simulateKeyPress(keyCode: CGKeyCode) {
         let source = CGEventSource(stateID: .hidSystemState)
 
@@ -371,8 +403,13 @@ class TextReplacementService: ObservableObject {
 
     private func pasteText(_ text: String) {
         let pasteboard = NSPasteboard.general
+
+        // Save previous clipboard content (string only for simplicity and reliability)
+        // Get the current change count to detect if clipboard was modified
+        let previousChangeCount = pasteboard.changeCount
         let previousContents = pasteboard.string(forType: .string)
 
+        // Set new content
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
@@ -391,27 +428,42 @@ class TextReplacementService: ObservableObject {
             vKeyUp.post(tap: .cghidEventTap)
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            pasteboard.clearContents()
-            if let previousContents = previousContents {
-                pasteboard.setString(previousContents, forType: .string)
+        // Restore previous clipboard contents
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [previousContents, previousChangeCount] in
+            // Only restore if clipboard hasn't been modified by user since we set it
+            if pasteboard.changeCount == previousChangeCount + 1 {
+                if let previousContents = previousContents {
+                    pasteboard.clearContents()
+                    pasteboard.setString(previousContents, forType: .string)
+                } else {
+                    // If there was nothing on the clipboard before, leave it empty
+                    pasteboard.clearContents()
+                }
             }
         }
     }
+
+    // MARK: - Permissions
 
     private func requestAccessibilityPermissions() {
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true]
         AXIsProcessTrustedWithOptions(options)
     }
 
-    func checkAccessibilityPermissions() -> Bool {
-        return AXIsProcessTrusted()
-    }
+    // MARK: - Toggle Service Event Tap
 
     private func setupToggleServiceEventTap() {
         // This event tap is always active to catch the toggle service shortcut
         // even when the main service is disabled
+
+        if !AXIsProcessTrusted() {
+            print("⚠️ Cannot create toggle service event tap - no accessibility permissions")
+            return
+        }
+
         let eventMask = (1 << CGEventType.keyDown.rawValue)
+
+        print("🔧 Attempting to create toggle service event tap...")
 
         guard let eventTap = CGEvent.tapCreate(
             tap: .cghidEventTap,
@@ -429,12 +481,16 @@ class TextReplacementService: ObservableObject {
             return
         }
 
+        print("✅ Toggle service event tap created successfully!")
+
         let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: eventTap, enable: true)
 
         self.toggleServiceEventTap = eventTap
         self.toggleServiceRunLoopSource = runLoopSource
+
+        print("✅ Toggle service event tap enabled and added to run loop")
     }
 
     private func handleToggleServiceEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
@@ -445,13 +501,24 @@ class TextReplacementService: ObservableObject {
         let nsEvent = NSEvent(cgEvent: event)
         let settings = SettingsManager.shared
 
+        // Check for toggle popover shortcut (works even when service is disabled)
+        if let nsEvent = nsEvent, settings.togglePopoverKey.matches(event: nsEvent) {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .togglePopover, object: nil)
+            }
+            return nil // Consume event
+        }
+
         // Check for toggle service shortcut
         if let nsEvent = nsEvent, settings.toggleServiceKey.matches(event: nsEvent) {
+            print("🎯 Toggle service shortcut detected! Current state: \(self.isEnabled ? "enabled" : "disabled")")
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 if self.isEnabled {
+                    print("🛑 Stopping service...")
                     self.stop()
                 } else {
+                    print("▶️ Starting service...")
                     self.start()
                 }
             }
