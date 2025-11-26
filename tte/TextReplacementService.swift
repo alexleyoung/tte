@@ -404,8 +404,8 @@ class TextReplacementService: ObservableObject {
     private func pasteText(_ text: String) {
         let pasteboard = NSPasteboard.general
 
-        // Save all previous pasteboard items (not just string)
-        let previousItems = pasteboard.pasteboardItems
+        // Save previous clipboard content (string only for simplicity and reliability)
+        let previousContents = pasteboard.string(forType: .string)
 
         // Set new content
         pasteboard.clearContents()
@@ -429,8 +429,8 @@ class TextReplacementService: ObservableObject {
         // Restore previous clipboard contents
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             pasteboard.clearContents()
-            if let previousItems = previousItems {
-                pasteboard.writeObjects(previousItems)
+            if let previousContents = previousContents {
+                pasteboard.setString(previousContents, forType: .string)
             }
         }
     }
