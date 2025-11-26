@@ -17,8 +17,8 @@ class SettingsManager: ObservableObject {
     @Published var acceptKeyAlt: KeyBinding = KeyBinding(keyCode: 36, modifiers: [.control], label: "⌃Return")
     @Published var nextKey: KeyBinding = KeyBinding(keyCode: 45, modifiers: [.control], label: "⌃N")
     @Published var previousKey: KeyBinding = KeyBinding(keyCode: 35, modifiers: [.control], label: "⌃P")
-    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: 14, modifiers: [.command, .shift], label: "⌘⇧E")
-    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
+    @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
+    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
 
     private init() {
         loadSettings()

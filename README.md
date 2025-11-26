@@ -20,7 +20,7 @@ A macOS status bar app that converts text to emoji like in Discord. Type emoji s
 - **Ctrl+N**: Next suggestion
 - **Ctrl+P**: Previous suggestion
 - **Ctrl+Shift+T**: Toggle service on/off
-- **Cmd+Shift+E**: Toggle settings popover
+- **Ctrl+Shift+H**: Toggle popover
 - **Escape**: Cancel autocomplete
 
 All shortcuts can be customized in the Settings tab.

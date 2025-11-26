@@ -16,6 +16,7 @@ class TextReplacementService: ObservableObject {
     private var eventMonitor: Any?
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    private var toggleServiceMonitor: Any?
     private var currentBuffer = ""
     private let maxBufferLength = 50
 
@@ -24,7 +25,9 @@ class TextReplacementService: ObservableObject {
     private var suggestions: [EmojiSuggestion] = []
     private var selectedSuggestionIndex = 0
 
-    private init() {}
+    private init() {
+        setupGlobalToggleMonitor()
+    }
 
     func start() {
         guard !isEnabled else { return }
@@ -127,18 +130,8 @@ class TextReplacementService: ObservableObject {
             return nil // Consume event
         }
 
-        // Check for toggle service shortcut
-        if let nsEvent = nsEvent, settings.toggleServiceKey.matches(event: nsEvent) {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                if self.isEnabled {
-                    self.stop()
-                } else {
-                    self.start()
-                }
-            }
-            return nil // Consume event
-        }
+        // Note: Toggle service shortcut is handled by setupGlobalToggleMonitor()
+        // so it works even when the service is disabled
 
         // Check autocomplete shortcuts
         if autocompleteActive {
@@ -412,5 +405,23 @@ class TextReplacementService: ObservableObject {
 
     func checkAccessibilityPermissions() -> Bool {
         return AXIsProcessTrusted()
+    }
+
+    private func setupGlobalToggleMonitor() {
+        // This monitor is always active to catch the toggle service shortcut
+        toggleServiceMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self else { return }
+            let settings = SettingsManager.shared
+
+            if settings.toggleServiceKey.matches(event: event) {
+                DispatchQueue.main.async {
+                    if self.isEnabled {
+                        self.stop()
+                    } else {
+                        self.start()
+                    }
+                }
+            }
+        }
     }
 }
