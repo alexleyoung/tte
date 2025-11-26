@@ -14,6 +14,23 @@ import Combine
 class TextReplacementService: ObservableObject {
     static let shared = TextReplacementService()
 
+    // MARK: - Constants
+
+    /// Maximum number of characters to keep in the input buffer
+    private static let maxBufferLength = 50
+
+    /// Delay before pasting emoji to ensure deletions complete (in seconds)
+    private static let pasteDelay: TimeInterval = 0.05
+
+    /// Delay before restoring clipboard contents (in seconds)
+    private static let clipboardRestoreDelay: TimeInterval = 0.1
+
+    /// Key code for the Escape key
+    private static let escapeKeyCode: UInt16 = 53
+
+    /// Maximum number of autocomplete suggestions to show
+    private static let maxSuggestions = 10
+
     // MARK: - Published Properties
 
     @Published var isEnabled = false
@@ -26,7 +43,6 @@ class TextReplacementService: ObservableObject {
     private var toggleServiceEventTap: CFMachPort?
     private var toggleServiceRunLoopSource: CFRunLoopSource?
     private var currentBuffer = ""
-    private let maxBufferLength = 50
 
     // MARK: - Autocomplete State
 
@@ -88,6 +104,9 @@ class TextReplacementService: ObservableObject {
 
     // MARK: - Event Tap Management
 
+    /// Creates and starts a CGEventTap to capture keyboard events globally.
+    /// Event taps allow monitoring and filtering keyboard/mouse events at the system level.
+    /// Requires accessibility permissions to function.
     private func startEventTap() {
         let eventMask = (1 << CGEventType.keyDown.rawValue)
 
@@ -132,6 +151,9 @@ class TextReplacementService: ObservableObject {
         }
     }
 
+    /// Handles keyboard events captured by the event tap.
+    /// This callback is invoked for every key press when the service is active.
+    /// - Returns: nil to consume the event (prevent it from propagating), or the original event to pass it through
     private func handleEventTap(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         guard type == .keyDown else {
             return Unmanaged.passUnretained(event)
@@ -196,7 +218,7 @@ class TextReplacementService: ObservableObject {
                 }
 
                 // Escape key
-                if keyCode == 53 {
+                if keyCode == Self.escapeKeyCode {
                     DispatchQueue.main.async { [weak self] in
                         self?.hideAutocomplete()
                     }
@@ -235,7 +257,7 @@ class TextReplacementService: ObservableObject {
 
             currentBuffer.append(char)
 
-            if currentBuffer.count > maxBufferLength {
+            if currentBuffer.count > Self.maxBufferLength {
                 currentBuffer.removeFirst()
             }
 
@@ -251,6 +273,8 @@ class TextReplacementService: ObservableObject {
 
     // MARK: - Autocomplete Management
 
+    /// Checks if the user has started typing an emoji shortcode (e.g., ":fir")
+    /// and should trigger autocomplete suggestions.
     private func checkForAutocompleteStart() {
         if let lastColonIndex = currentBuffer.lastIndex(of: ":") {
             let afterColon = currentBuffer[currentBuffer.index(after: lastColonIndex)...]
@@ -261,11 +285,14 @@ class TextReplacementService: ObservableObject {
         }
     }
 
+    /// Activates the autocomplete mode and shows initial suggestions.
     private func startAutocomplete() {
         autocompleteActive = true
         updateAutocomplete()
     }
 
+    /// Updates the autocomplete suggestions based on the current prefix.
+    /// Filters emoji shortcodes that match what the user has typed so far.
     private func updateAutocomplete() {
         if let lastColonIndex = currentBuffer.lastIndex(of: ":") {
             let afterColon = currentBuffer[currentBuffer.index(after: lastColonIndex)...]
@@ -273,7 +300,7 @@ class TextReplacementService: ObservableObject {
 
             if autocompletePrefix == ":" {
                 suggestions = EmojiRegistry.shared.getAllShortcuts()
-                    .prefix(10)
+                    .prefix(Self.maxSuggestions)
                     .compactMap { shortcode in
                         guard let emoji = EmojiRegistry.shared.getEmoji(for: shortcode) else { return nil }
                         return EmojiSuggestion(shortcode: shortcode, emoji: emoji)
@@ -281,7 +308,7 @@ class TextReplacementService: ObservableObject {
             } else {
                 suggestions = EmojiRegistry.shared.getAllShortcuts()
                     .filter { $0.hasPrefix(autocompletePrefix) }
-                    .prefix(10)
+                    .prefix(Self.maxSuggestions)
                     .compactMap { shortcode in
                         guard let emoji = EmojiRegistry.shared.getEmoji(for: shortcode) else { return nil }
                         return EmojiSuggestion(shortcode: shortcode, emoji: emoji)
@@ -342,7 +369,7 @@ class TextReplacementService: ObservableObject {
         }
 
         // Small delay to ensure deletions complete before pasting
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.pasteDelay) { [weak self] in
             guard let self = self else { return }
             self.pasteText(suggestion.emoji)
 
@@ -360,25 +387,44 @@ class TextReplacementService: ObservableObject {
 
     // MARK: - Emoji Replacement
 
+    /// Checks if the current buffer ends with a complete emoji shortcode and replaces it.
+    /// Uses optimized O(1) dictionary lookup instead of iterating through all emojis.
     private func checkForEmojiShortcut() {
-        for (shortcut, emoji) in EmojiRegistry.shared.mappings {
-            if currentBuffer.hasSuffix(shortcut) {
-                replaceWithEmoji(shortcut: shortcut, emoji: emoji)
-                hideAutocomplete()
-                break
-            }
+        // Find potential shortcodes by looking for patterns like :word:
+        // We need to find the last occurrence of ":" before the end
+        guard let lastColonIndex = currentBuffer.lastIndex(of: ":") else { return }
+
+        // Check if there's a previous colon to form a complete shortcode
+        let beforeLastColon = currentBuffer[..<lastColonIndex]
+        guard let previousColonIndex = beforeLastColon.lastIndex(of: ":") else { return }
+
+        // Extract the potential shortcode including both colons
+        let potentialShortcode = String(currentBuffer[previousColonIndex...lastColonIndex])
+
+        // Direct O(1) dictionary lookup instead of O(n) iteration
+        if let emoji = EmojiRegistry.shared.getEmoji(for: potentialShortcode) {
+            replaceWithEmoji(shortcut: potentialShortcode, emoji: emoji)
+            hideAutocomplete()
         }
     }
 
+    /// Replaces an emoji shortcode with its corresponding emoji character.
+    /// Simulates backspace key presses to delete the shortcode, then pastes the emoji.
+    /// - Parameters:
+    ///   - shortcut: The emoji shortcode to replace (e.g., ":fire:")
+    ///   - emoji: The emoji character to insert (e.g., "🔥")
     private func replaceWithEmoji(shortcut: String, emoji: String) {
         let deleteCount = shortcut.count
 
+        // Simulate backspace key presses to delete the shortcode
         for _ in 0..<deleteCount {
             simulateKeyPress(keyCode: CGKeyCode(kVK_Delete))
         }
 
+        // Paste the emoji using the clipboard
         pasteText(emoji)
 
+        // Update the internal buffer to reflect the replacement
         if currentBuffer.count >= shortcut.count {
             let startIndex = currentBuffer.index(currentBuffer.endIndex, offsetBy: -shortcut.count)
             currentBuffer.removeSubrange(startIndex..<currentBuffer.endIndex)
@@ -401,6 +447,9 @@ class TextReplacementService: ObservableObject {
         }
     }
 
+    /// Pastes text by temporarily modifying the clipboard and simulating Cmd+V.
+    /// Attempts to restore the previous clipboard contents after a delay.
+    /// - Parameter text: The text to paste (typically an emoji)
     private func pasteText(_ text: String) {
         let pasteboard = NSPasteboard.general
 
@@ -409,32 +458,57 @@ class TextReplacementService: ObservableObject {
         let previousChangeCount = pasteboard.changeCount
         let previousContents = pasteboard.string(forType: .string)
 
-        // Set new content
+        // Set new content - guard against failure
         pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-
-        let source = CGEventSource(stateID: .hidSystemState)
-        if let vKeyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Command), keyDown: true),
-           let pasteKeyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true),
-           let pasteKeyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false),
-           let vKeyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Command), keyDown: false) {
-
-            pasteKeyDown.flags = .maskCommand
-            pasteKeyUp.flags = .maskCommand
-
-            vKeyDown.post(tap: .cghidEventTap)
-            pasteKeyDown.post(tap: .cghidEventTap)
-            pasteKeyUp.post(tap: .cghidEventTap)
-            vKeyUp.post(tap: .cghidEventTap)
+        guard pasteboard.setString(text, forType: .string) else {
+            #if DEBUG
+            print("⚠️ Failed to set clipboard content for emoji paste")
+            #endif
+            return
         }
 
-        // Restore previous clipboard contents
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [previousContents, previousChangeCount] in
+        // Create event source for simulating keyboard events
+        guard let source = CGEventSource(stateID: .hidSystemState) else {
+            #if DEBUG
+            print("⚠️ Failed to create CGEventSource for paste operation")
+            #endif
+            return
+        }
+
+        // Create keyboard events for Cmd+V paste shortcut
+        guard let vKeyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Command), keyDown: true),
+              let pasteKeyDown = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true),
+              let pasteKeyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false),
+              let vKeyUp = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(kVK_Command), keyDown: false) else {
+            #if DEBUG
+            print("⚠️ Failed to create keyboard events for paste operation")
+            #endif
+            return
+        }
+
+        // Apply command modifier flag to paste events
+        pasteKeyDown.flags = .maskCommand
+        pasteKeyUp.flags = .maskCommand
+
+        // Post the keyboard events to simulate Cmd+V
+        vKeyDown.post(tap: .cghidEventTap)
+        pasteKeyDown.post(tap: .cghidEventTap)
+        pasteKeyUp.post(tap: .cghidEventTap)
+        vKeyUp.post(tap: .cghidEventTap)
+
+        // Restore previous clipboard contents after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.clipboardRestoreDelay) { [previousContents, previousChangeCount] in
             // Only restore if clipboard hasn't been modified by user since we set it
+            // This prevents overwriting user's intentional clipboard changes
             if pasteboard.changeCount == previousChangeCount + 1 {
                 if let previousContents = previousContents {
                     pasteboard.clearContents()
-                    pasteboard.setString(previousContents, forType: .string)
+                    let success = pasteboard.setString(previousContents, forType: .string)
+                    #if DEBUG
+                    if !success {
+                        print("⚠️ Failed to restore previous clipboard contents")
+                    }
+                    #endif
                 } else {
                     // If there was nothing on the clipboard before, leave it empty
                     pasteboard.clearContents()

@@ -11,9 +11,26 @@ import Cocoa
 class AutocompleteWindowController: NSWindowController {
     static let shared = AutocompleteWindowController()
 
+    // MARK: - Constants
+
+    /// Default width of the autocomplete window
+    private static let defaultWindowWidth: CGFloat = 300
+
+    /// Default height of the autocomplete window
+    private static let defaultWindowHeight: CGFloat = 200
+
+    /// Height of each autocomplete suggestion item
+    private static let suggestionItemHeight: CGFloat = 40
+
+    /// Vertical padding for the autocomplete list
+    private static let listPadding: CGFloat = 20
+
+    /// Vertical offset from the top of the screen
+    private static let topScreenOffset: CGFloat = 100
+
     private init() {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 300, height: 200),
+            contentRect: NSRect(x: 0, y: 0, width: Self.defaultWindowWidth, height: Self.defaultWindowHeight),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -37,12 +54,12 @@ class AutocompleteWindowController: NSWindowController {
     func show(suggestions: [EmojiSuggestion], selectedIndex: Int) {
         guard let screen = NSScreen.main else { return }
 
-        let windowWidth: CGFloat = 300
-        let windowHeight: CGFloat = min(CGFloat(suggestions.count * 40 + 20), 200)
+        let windowWidth: CGFloat = Self.defaultWindowWidth
+        let windowHeight: CGFloat = min(CGFloat(suggestions.count) * Self.suggestionItemHeight + Self.listPadding, Self.defaultWindowHeight)
 
         let screenFrame = screen.visibleFrame
         let x = screenFrame.midX - windowWidth / 2
-        let y = screenFrame.maxY - windowHeight - 100
+        let y = screenFrame.maxY - windowHeight - Self.topScreenOffset
 
         window?.setFrame(NSRect(x: x, y: y, width: windowWidth, height: windowHeight), display: true)
 

@@ -303,6 +303,11 @@ class EmojiRegistry {
         ":arrow_down:": "⬇️"
     ]
 
+    /// Cached sorted list of all shortcodes for efficient autocomplete lookups
+    private lazy var sortedShortcuts: [String] = {
+        return Array(mappings.keys).sorted()
+    }()
+
     private init() {}
 
     /// Returns the emoji for a given shortcode.
@@ -313,8 +318,9 @@ class EmojiRegistry {
     }
 
     /// Returns all available shortcodes in alphabetical order.
+    /// Uses a cached sorted list for performance.
     /// - Returns: Sorted array of shortcode strings
     func getAllShortcuts() -> [String] {
-        return Array(mappings.keys).sorted()
+        return sortedShortcuts
     }
 }
