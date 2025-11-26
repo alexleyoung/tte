@@ -147,7 +147,7 @@ class TextReplacementService: ObservableObject {
         print("Event tap - keyCode: \(keyCode), flags: \(flags), chars: \(nsEvent?.characters ?? "nil")")
         #endif
 
-        // Check for toggle popover shortcut
+        // Check for toggle popover shortcut (also handled in toggleServiceEventTap for global access)
         if let nsEvent = nsEvent, settings.togglePopoverKey.matches(event: nsEvent) {
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .togglePopover, object: nil)
@@ -155,8 +155,8 @@ class TextReplacementService: ObservableObject {
             return nil // Consume event
         }
 
-        // Note: Toggle service shortcut is handled by setupGlobalToggleMonitor()
-        // so it works even when the service is disabled
+        // Note: Toggle service and toggle popover shortcuts are also handled by
+        // setupToggleServiceEventTap() so they work even when the service is disabled
 
         // Check autocomplete shortcuts
         if autocompleteActive {
@@ -492,6 +492,14 @@ class TextReplacementService: ObservableObject {
 
         let nsEvent = NSEvent(cgEvent: event)
         let settings = SettingsManager.shared
+
+        // Check for toggle popover shortcut (works even when service is disabled)
+        if let nsEvent = nsEvent, settings.togglePopoverKey.matches(event: nsEvent) {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .togglePopover, object: nil)
+            }
+            return nil // Consume event
+        }
 
         // Check for toggle service shortcut
         if let nsEvent = nsEvent, settings.toggleServiceKey.matches(event: nsEvent) {
