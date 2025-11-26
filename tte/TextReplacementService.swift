@@ -123,6 +123,19 @@ class TextReplacementService: ObservableObject {
             return nil // Consume event
         }
 
+        // Check for toggle service shortcut
+        if let nsEvent = nsEvent, settings.toggleServiceKey.matches(event: nsEvent) {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if self.isEnabled {
+                    self.stop()
+                } else {
+                    self.start()
+                }
+            }
+            return nil // Consume event
+        }
+
         // Check autocomplete shortcuts
         if autocompleteActive {
             #if DEBUG

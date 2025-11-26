@@ -18,6 +18,7 @@ class SettingsManager: ObservableObject {
     @Published var nextKey: KeyBinding = KeyBinding(keyCode: 45, modifiers: [.control], label: "⌃N")
     @Published var previousKey: KeyBinding = KeyBinding(keyCode: 35, modifiers: [.control], label: "⌃P")
     @Published var togglePopoverKey: KeyBinding = KeyBinding(keyCode: 14, modifiers: [.command, .shift], label: "⌘⇧E")
+    @Published var toggleServiceKey: KeyBinding = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
 
     private init() {
         loadSettings()
@@ -48,6 +49,11 @@ class SettingsManager: ObservableObject {
            let binding = try? JSONDecoder().decode(KeyBinding.self, from: toggleData) {
             togglePopoverKey = binding
         }
+
+        if let toggleServiceData = UserDefaults.standard.data(forKey: "toggleServiceKey"),
+           let binding = try? JSONDecoder().decode(KeyBinding.self, from: toggleServiceData) {
+            toggleServiceKey = binding
+        }
     }
 
     func saveSettings() {
@@ -69,6 +75,10 @@ class SettingsManager: ObservableObject {
 
         if let data = try? JSONEncoder().encode(togglePopoverKey) {
             UserDefaults.standard.set(data, forKey: "togglePopoverKey")
+        }
+
+        if let data = try? JSONEncoder().encode(toggleServiceKey) {
+            UserDefaults.standard.set(data, forKey: "toggleServiceKey")
         }
     }
 }

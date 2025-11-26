@@ -56,6 +56,13 @@ struct SettingsView: View {
                     isRecording: recordingKey == .togglePopover,
                     onRecord: { recordingKey = .togglePopover }
                 )
+
+                KeyBindingRow(
+                    title: "Toggle Service On/Off",
+                    binding: settings.toggleServiceKey,
+                    isRecording: recordingKey == .toggleService,
+                    onRecord: { recordingKey = .toggleService }
+                )
             }
                 .padding()
                 .background(Color.gray.opacity(0.1))
@@ -77,6 +84,7 @@ struct SettingsView: View {
         settings.nextKey = KeyBinding(keyCode: 45, modifiers: [.control], label: "⌃N")
         settings.previousKey = KeyBinding(keyCode: 35, modifiers: [.control], label: "⌃P")
         settings.togglePopoverKey = KeyBinding(keyCode: 14, modifiers: [.command, .shift], label: "⌘⇧E")
+        settings.toggleServiceKey = KeyBinding(keyCode: 17, modifiers: [.control, .shift], label: "⌃⇧T")
         settings.saveSettings()
         recordingKey = nil
     }
@@ -115,6 +123,8 @@ struct SettingsView: View {
             settings.previousKey = newBinding
         case .togglePopover:
             settings.togglePopoverKey = newBinding
+        case .toggleService:
+            settings.toggleServiceKey = newBinding
         }
 
         settings.saveSettings()
@@ -193,6 +203,7 @@ enum KeyBindingType {
     case next
     case previous
     case togglePopover
+    case toggleService
 }
 
 struct KeyBindingRow: View {

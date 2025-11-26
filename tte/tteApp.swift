@@ -20,6 +20,7 @@ struct tteApp: App {
 
 extension Notification.Name {
     static let togglePopover = Notification.Name("togglePopover")
+    static let toggleService = Notification.Name("toggleService")
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
