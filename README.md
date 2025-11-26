@@ -35,6 +35,33 @@ All shortcuts can be customized in the Settings tab.
 
 ### Build Instructions
 
+#### Quick Build (Using Makefile)
+
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd tte
+   ```
+
+2. **Build and install**
+   ```bash
+   make install
+   ```
+
+   This will build the app in Release configuration and install it to `/Applications/tte.app`.
+
+3. **Launch the app**
+   ```bash
+   open /Applications/tte.app
+   ```
+
+**Other Makefile commands:**
+- `make build` - Build the app without installing
+- `make clean` - Clean build artifacts
+- `make help` - Show available commands
+
+#### Manual Build (Using Xcode)
+
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
@@ -55,12 +82,12 @@ All shortcuts can be customized in the Settings tab.
 
 4. **Copy to Applications folder**
    ```bash
-   cp -R build/Build/Products/Release/tte.app /Applications/
+   sudo cp -R build/Build/Products/Release/tte.app /Applications/
    ```
 
    If you built in Xcode, the app will be in:
    ```bash
-   cp -R ~/Library/Developer/Xcode/DerivedData/tte-*/Build/Products/Release/tte.app /Applications/
+   sudo cp -R ~/Library/Developer/Xcode/DerivedData/tte-*/Build/Products/Release/tte.app /Applications/
    ```
 
 5. **Launch the app**
