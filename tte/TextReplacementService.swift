@@ -10,6 +10,8 @@ import Carbon
 import Combine
 
 class TextReplacementService: ObservableObject {
+    static let shared = TextReplacementService()
+
     @Published var isEnabled = false
     private var eventMonitor: Any?
     private var eventTap: CFMachPort?
@@ -21,6 +23,8 @@ class TextReplacementService: ObservableObject {
     private var autocompletePrefix = ""
     private var suggestions: [EmojiSuggestion] = []
     private var selectedSuggestionIndex = 0
+
+    private init() {}
 
     func start() {
         guard !isEnabled else { return }

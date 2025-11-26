@@ -9,7 +9,7 @@ import SwiftUI
 import ApplicationServices
 
 struct ContentView: View {
-    @StateObject private var textReplacementService = TextReplacementService()
+    @ObservedObject private var textReplacementService = TextReplacementService.shared
     @State private var hasAccessibilityPermission = false
     @State private var searchText = ""
     @State private var permissionCheckTimer: Timer?
