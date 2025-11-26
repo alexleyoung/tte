@@ -405,6 +405,8 @@ class TextReplacementService: ObservableObject {
         let pasteboard = NSPasteboard.general
 
         // Save previous clipboard content (string only for simplicity and reliability)
+        // Get the current change count to detect if clipboard was modified
+        let previousChangeCount = pasteboard.changeCount
         let previousContents = pasteboard.string(forType: .string)
 
         // Set new content
@@ -427,10 +429,16 @@ class TextReplacementService: ObservableObject {
         }
 
         // Restore previous clipboard contents
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            pasteboard.clearContents()
-            if let previousContents = previousContents {
-                pasteboard.setString(previousContents, forType: .string)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [previousContents, previousChangeCount] in
+            // Only restore if clipboard hasn't been modified by user since we set it
+            if pasteboard.changeCount == previousChangeCount + 1 {
+                if let previousContents = previousContents {
+                    pasteboard.clearContents()
+                    pasteboard.setString(previousContents, forType: .string)
+                } else {
+                    // If there was nothing on the clipboard before, leave it empty
+                    pasteboard.clearContents()
+                }
             }
         }
     }
