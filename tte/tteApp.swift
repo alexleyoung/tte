@@ -32,7 +32,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if let button = statusItem?.button {
             button.image = NSImage(systemSymbolName: "face.smiling", accessibilityDescription: "Text to Emoji")
-            button.action = #selector(togglePopover)
+            button.action = #selector(handleLeftClick)
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
         }
 
@@ -47,6 +48,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .togglePopover,
             object: nil
         )
+    }
+
+    @objc func handleLeftClick() {
+        guard let event = NSApp.currentEvent else { return }
+
+        if event.type == .rightMouseUp {
+            showContextMenu()
+        } else {
+            togglePopover()
+        }
+    }
+
+    func showContextMenu() {
+        let menu = NSMenu()
+
+        menu.addItem(NSMenuItem(title: "Open TTE", action: #selector(togglePopover), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Quit TTE", action: #selector(quitApp), keyEquivalent: "q"))
+
+        statusItem?.menu = menu
+        statusItem?.button?.performClick(nil)
+        statusItem?.menu = nil
+    }
+
+    @objc func quitApp() {
+        NSApplication.shared.terminate(nil)
     }
 
     @objc func togglePopover() {
