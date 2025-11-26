@@ -83,8 +83,8 @@ struct SettingsView: View {
         settings.acceptKeyAlt = KeyBinding(keyCode: KeyCode.return, modifiers: [.control], label: "⌃Return")
         settings.nextKey = KeyBinding(keyCode: KeyCode.n, modifiers: [.control], label: "⌃N")
         settings.previousKey = KeyBinding(keyCode: KeyCode.p, modifiers: [.control], label: "⌃P")
-        settings.togglePopoverKey = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
-        settings.toggleServiceKey = KeyBinding(keyCode: KeyCode.t, modifiers: [.command, .control, .shift], label: "⌘⌃⇧T")
+        settings.togglePopoverKey = KeyBinding(keyCode: KeyCode.h, modifiers: [.control, .shift], label: "⌃⇧H")
+        settings.toggleServiceKey = KeyBinding(keyCode: KeyCode.t, modifiers: [.control, .shift], label: "⌃⇧T")
         settings.saveSettings()
         recordingKey = nil
     }
