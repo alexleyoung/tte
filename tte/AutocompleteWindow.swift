@@ -75,26 +75,37 @@ struct AutocompleteView: View {
                     .foregroundColor(.secondary)
                     .padding()
             } else {
-                ScrollView {
-                    VStack(spacing: 2) {
-                        ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
-                            HStack(spacing: 10) {
-                                Text(suggestion.emoji)
-                                    .font(.title2)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(spacing: 2) {
+                            ForEach(Array(suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                                HStack(spacing: 10) {
+                                    Text(suggestion.emoji)
+                                        .font(.title2)
 
-                                Text(suggestion.shortcode)
-                                    .font(.system(.body, design: .monospaced))
-                                    .foregroundColor(.primary)
+                                    Text(suggestion.shortcode)
+                                        .font(.system(.body, design: .monospaced))
+                                        .foregroundColor(.primary)
 
-                                Spacer()
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(index == selectedIndex ? Color.accentColor.opacity(0.3) : Color.clear)
+                                .cornerRadius(6)
+                                .id(index)
                             }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(index == selectedIndex ? Color.accentColor.opacity(0.3) : Color.clear)
-                            .cornerRadius(6)
+                        }
+                        .padding(8)
+                    }
+                    .onChange(of: selectedIndex) { oldValue, newValue in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            proxy.scrollTo(newValue, anchor: .center)
                         }
                     }
-                    .padding(8)
+                    .onAppear {
+                        proxy.scrollTo(selectedIndex, anchor: .center)
+                    }
                 }
             }
         }
