@@ -13,6 +13,12 @@ struct ContentView: View {
     @State private var hasAccessibilityPermission = false
     @State private var searchText = ""
     @State private var permissionCheckTimer: Timer?
+    @State private var selectedTab: ContentTab = .main
+
+    enum ContentTab {
+        case main
+        case settings
+    }
 
     var filteredShortcuts: [String] {
         let shortcuts = EmojiRegistry.shared.getAllShortcuts()
@@ -23,12 +29,57 @@ struct ContentView: View {
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Text to Emoji")
-                .font(.title)
-                .fontWeight(.bold)
+        VStack(spacing: 0) {
+            HStack {
+                Button(action: { selectedTab = .main }) {
+                    Text("Main")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(selectedTab == .main ? Color.accentColor.opacity(0.2) : Color.clear)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
 
+                Button(action: { selectedTab = .settings }) {
+                    Text("Settings")
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(selectedTab == .settings ? Color.accentColor.opacity(0.2) : Color.clear)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding()
+            .background(Color.gray.opacity(0.05))
+
+            if selectedTab == .main {
+                mainView
+            } else {
+                SettingsView()
+            }
+        }
+        .frame(minWidth: 450, minHeight: 600)
+        .onAppear {
+            hasAccessibilityPermission = textReplacementService.checkAccessibilityPermissions()
             if !hasAccessibilityPermission {
+                startPermissionMonitoring()
+            }
+        }
+        .onDisappear {
+            stopPermissionMonitoring()
+        }
+    }
+
+    var mainView: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                Text("Text to Emoji")
+                    .font(.title)
+                    .fontWeight(.bold)
+
+                if !hasAccessibilityPermission {
                 VStack(spacing: 15) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 50))
@@ -161,17 +212,9 @@ struct ContentView: View {
                     .frame(maxHeight: 300)
                 }
                 .padding()
+                }
             }
-        }
-        .frame(minWidth: 450, minHeight: 600)
-        .onAppear {
-            hasAccessibilityPermission = textReplacementService.checkAccessibilityPermissions()
-            if !hasAccessibilityPermission {
-                startPermissionMonitoring()
-            }
-        }
-        .onDisappear {
-            stopPermissionMonitoring()
+            .padding()
         }
     }
 

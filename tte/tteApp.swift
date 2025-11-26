@@ -18,6 +18,10 @@ struct tteApp: App {
     }
 }
 
+extension Notification.Name {
+    static let togglePopover = Notification.Name("togglePopover")
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var popover: NSPopover?
@@ -35,6 +39,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover?.contentSize = NSSize(width: 450, height: 600)
         popover?.behavior = .transient
         popover?.contentViewController = NSHostingController(rootView: ContentView())
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(togglePopover),
+            name: .togglePopover,
+            object: nil
+        )
     }
 
     @objc func togglePopover() {
