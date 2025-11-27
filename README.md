@@ -1,170 +1,147 @@
-# Text-to-Emoji (TTE)
+# tte (text-to-emoji)
 
-> NOTE: this is COMPLETELY vibe coded with Claude. Maybe I will learn macOS dev in the future... for now this will do
+> vibe coded with claude. i might learn macOS dev properly someday. for now, this works.
 
-A macOS status bar app that converts text to emoji like in Discord. Type emoji shortcodes (like `:fire:` or `:heart:`) and they'll automatically be replaced with their corresponding emoji! Features autocomplete suggestions when you type `:` and customizable keyboard shortcuts.
+a little menu bar app that does text emoji replacements. type `:sob:` and get 😭 (#1 use case). that's it.
 
-## Features
+## why this exists
 
-- **Automatic Text Replacement**: Type `:fire:` and it becomes 🔥
-- **Autocomplete**: Type `:` to see emoji suggestions in real-time
-- **Discord-Compatible**: Uses the same emoji shortcodes as Discord (250+ emojis)
-- **Global Keyboard Shortcuts**: Works across all applications
-- **Customizable Keybindings**: Remap shortcuts to your preference
-- **Status Bar Interface**: Unobtrusive menu bar app
+i was tired of copying emojis from the internet or hunting through the macOS emoji picker. discord and slack's `:shortcode:` system is muscle memory at this point, so i (claude) made it work everywhere.
 
-## Default Keyboard Shortcuts
+## what it does
 
-- **Tab**: Accept autocomplete suggestion
-- **Ctrl+Return**: Accept suggestion (alternative)
-- **Ctrl+N**: Next suggestion
-- **Ctrl+P**: Previous suggestion
-- **Ctrl+Shift+T**: Toggle service on/off
-- **Ctrl+Shift+H**: Toggle popover
-- **Escape**: Cancel autocomplete
+- type emoji shortcodes (`:fire:`, `:heart:`, etc.) and they auto-replace with the actual emoji
+- autocomplete when you hit `:` - shows suggestions as you type acceptable via customizable keymaps
+- learns what you use most and surfaces those first
+- case-insensitive search
+- 250+ discord emoji shortcodes (i think its accurate, claude did this. u can always manually edit the map in `EmojiRegistry`)
+- global keyboard shortcuts
+- sits in your menu bar, stays out of your way
 
-All shortcuts can be customized in the Settings tab.
+## shortcuts
 
-## Building from Source
+you can remap all of these, but here's the defaults:
 
-### Requirements
+- `Tab` - accept autocomplete
+- `Ctrl+Return` - also accepts (this is currently bugged, use tab)
+- `Ctrl+N` / `Ctrl+P` - navigate suggestions
+- `Ctrl+Shift+T` - toggle the whole thing on/off
+- `Ctrl+Shift+H` - open the emoji picker UI
+- `Escape` - cancel autocomplete
 
-- macOS 15.6 or later
-- Xcode 16.0 or later
-- Command Line Tools for Xcode
+## building it
 
-### Build Instructions
+you need macOS 15.6+ and Xcode 16+
 
-#### Quick Build (Using Makefile)
+### quick way
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd tte
-   ```
+```bash
+git clone <your-repo-url>
+cd tte
+make install
+open /Applications/tte.app
+```
 
-2. **Build and install**
-   ```bash
-   make install
-   ```
+the makefile builds in release mode and drops it in `/Applications`. done.
 
-   This will build the app in Release configuration and install it to `/Applications/tte.app`.
+other commands: `make build`, `make clean`, `make help`
 
-3. **Launch the app**
-   ```bash
-   open /Applications/tte.app
-   ```
+### manual way
 
-**Other Makefile commands:**
-- `make build` - Build the app without installing
-- `make clean` - Clean build artifacts
-- `make help` - Show available commands
+```bash
+git clone <your-repo-url>
+cd tte
+open tte.xcodeproj
+```
 
-#### Manual Build (Using Xcode)
+then either build in Xcode (⌘B) or:
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd tte
-   ```
+```bash
+xcodebuild -scheme tte -configuration Release build
+sudo cp -R build/Build/Products/Release/tte.app /Applications/
+```
 
-2. **Open the project in Xcode**
-   ```bash
-   open tte.xcodeproj
-   ```
+if you built in Xcode, the app's buried in DerivedData:
 
-3. **Build the app**
-   - In Xcode: Product → Build (⌘B)
-   - Or via command line:
-     ```bash
-     xcodebuild -scheme tte -configuration Release build
-     ```
+```bash
+sudo cp -R ~/Library/Developer/Xcode/DerivedData/tte-*/Build/Products/Release/tte.app /Applications/
+```
 
-4. **Copy to Applications folder**
-   ```bash
-   sudo cp -R build/Build/Products/Release/tte.app /Applications/
-   ```
+then:
 
-   If you built in Xcode, the app will be in:
-   ```bash
-   sudo cp -R ~/Library/Developer/Xcode/DerivedData/tte-*/Build/Products/Release/tte.app /Applications/
-   ```
+```bash
+open /Applications/tte.app
+```
 
-5. **Launch the app**
-   ```bash
-   open /Applications/tte.app
-   ```
+## first time setup
 
-### First Launch Setup
+1. **grant accessibility permissions** (required)
+   - the app will tell you this on first launch
+   - System Settings → Privacy & Security → Accessibility
+   - unlock (🔒), find "tte", toggle it on
+   - if it's not there, hit "+" and add it from /Applications
 
-1. **Grant Accessibility Permissions** (required for keyboard monitoring)
-   - On first launch, the app will show setup instructions
-   - Open System Settings → Privacy & Security → Accessibility
-   - Click the lock icon (🔒) and enter your password
-   - Find "tte" in the list and toggle it ON
-   - If "tte" doesn't appear, click the "+" button and manually add it from /Applications/
+2. **turn it on**
+   - click the menu bar icon
+   - toggle from "Inactive" to "Active"
+   - or just hit `Ctrl+Shift+H` from anywhere
 
-2. **Enable the service**
-   - Click the smiley face icon in your menu bar
-   - Click the "Inactive" button to toggle to "Active"
-   - Or press Ctrl+Shift+T to toggle from anywhere
+3. **use it**
+   - type `:fire:` → 🔥
+   - type `:` → see all your options
+   - the more you use something, the higher it ranks
 
-3. **Start using emoji!**
-   - Type `:fire:` and it becomes 🔥
-   - Type `:` to see autocomplete suggestions
-   - Browse the emoji list in the app to discover more shortcodes
+## how to use it
 
-## Usage
+### autocomplete
 
-### Autocomplete Mode
+- type `:` anywhere
+- floating window shows emoji (sorted by what you use most)
+- keep typing to filter (`:fir` finds fire-related stuff)
+- works case-insensitive - `:FIRE:` = `:fire:`
+- `Ctrl+N`/`Ctrl+P` to navigate
+- `Tab` to insert
+- `Escape` to bail
 
-1. Type `:` in any application
-2. A floating window appears with emoji suggestions
-3. Continue typing to filter (e.g., `:fir` shows fire-related emoji)
-4. Use Ctrl+N/P to navigate suggestions
-5. Press Tab to accept the selected emoji
-6. Press Escape to cancel
+the app counts your emojis used and your completes will sort accordingly.
 
-### Automatic Replacement Mode
+### auto-replace
 
-Simply type the complete shortcode (e.g., `:sob:`) and it will automatically be replaced with 😭
+just type the full shortcode. `:sob:` becomes 😭 immediately.
 
-### Customizing Shortcuts
+### customizing shortcuts
 
-1. Click the menu bar icon
-2. Navigate to the Settings tab
-3. Click on any shortcut to record a new key combination
-4. Press your desired keys (including modifiers like Ctrl, Cmd, etc.)
-5. Click "Reset to Defaults" to restore default shortcuts
+click the menu bar → settings tab → click any shortcut → press your new keys → done.
 
-## Technical Details
+hit "Reset to Defaults" if you mess it up.
 
-- Built with SwiftUI and Cocoa
-- Uses CGEventTap for low-level keyboard event capture
-- Requires Accessibility permissions to monitor keyboard input globally
-- Persists custom keybindings to UserDefaults
-- Clipboard-based text insertion for maximum compatibility
+## technical stuff
 
-## Troubleshooting
+- SwiftUI + Cocoa
+- CGEventTap for system-wide keyboard capture
+- needs accessibility permissions to monitor keystrokes globally
+- uses clipboard for insertion (maximum app compatibility)
+- keybindings persist to UserDefaults
+- emoji usage stats persist too
 
-### Keyboard shortcuts not working
+## troubleshooting
 
-- Check that Accessibility permissions are granted
-- Try disabling conflicting keyboard customization software (Karabiner, etc.) temporarily
-- Some system shortcuts (like Mission Control) may take priority over custom shortcuts
-- Try customizing the shortcuts to avoid conflicts
+**shortcuts don't work**
+- check accessibility permissions are actually on
+- disable conflicting keyboard tools (karabiner, etc.) temporarily
+- some system shortcuts override custom ones - try remapping
+- restart the app
 
-### App doesn't appear in Accessibility settings
+**app not in accessibility settings**
+- make sure it's in /Applications (not running from Xcode build folder)
+- launch once, then restart your mac
+- manually add it with the "+" button
 
-- Make sure the app is in /Applications/ (not running from Xcode DerivedData)
-- Try launching the app once, then restarting your Mac
-- Manually add the app using the "+" button in Accessibility settings
+**autocomplete doesn't show**
+- check if it's Active in the menu bar
+- toggle off/on with `Ctrl+Shift+H`
+- check Console.app, filter for "tte" to see errors
 
-### Autocomplete window doesn't show
+## credits
 
-- Ensure the service is Active (check menu bar)
-- Try toggling the service off and on (Ctrl+Shift+T)
-- Check Console.app for error messages (filter for "tte")
-
-## Credits
-
+claude 4.5 sonnet for making this work and whoever invented the :shortcode: system
