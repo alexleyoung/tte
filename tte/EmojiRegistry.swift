@@ -56,7 +56,7 @@ class EmojiRegistry {
         ":frowning2:": "☹️",
         ":persevere:": "😣",
         ":confounded:": "😖",
-        ":tired_face:": "😫",
+        ":tired_face:": "🫩",
         ":weary:": "😩",
         ":pleading_face:": "🥺",
         ":cry:": "😢",
