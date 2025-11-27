@@ -303,7 +303,15 @@ class EmojiRegistry {
         ":arrow_down:": "⬇️"
     ]
 
-    private init() {}
+    /// Dictionary tracking usage count for each shortcode
+    private var usageCounts: [String: Int] = [:]
+
+    /// UserDefaults key for persisting usage counts
+    private let usageCountsKey = "emojiUsageCounts"
+
+    private init() {
+        loadUsageCounts()
+    }
 
     /// Returns the emoji for a given shortcode.
     /// - Parameter shortcut: The emoji shortcode (e.g., ":fire:")
@@ -316,5 +324,48 @@ class EmojiRegistry {
     /// - Returns: Sorted array of shortcode strings
     func getAllShortcuts() -> [String] {
         return Array(mappings.keys).sorted()
+    }
+
+    /// Returns all available shortcodes sorted by usage count (most used first), then alphabetically.
+    /// - Returns: Sorted array of shortcode strings
+    func getShortcutsSortedByUsage() -> [String] {
+        return Array(mappings.keys).sorted { shortcode1, shortcode2 in
+            let count1 = usageCounts[shortcode1] ?? 0
+            let count2 = usageCounts[shortcode2] ?? 0
+
+            if count1 != count2 {
+                return count1 > count2
+            }
+            return shortcode1 < shortcode2
+        }
+    }
+
+    /// Records that an emoji shortcode was used.
+    /// - Parameter shortcut: The emoji shortcode that was used
+    func recordUsage(for shortcut: String) {
+        usageCounts[shortcut, default: 0] += 1
+        saveUsageCounts()
+    }
+
+    /// Gets the usage count for a shortcode.
+    /// - Parameter shortcut: The emoji shortcode
+    /// - Returns: The number of times this shortcode has been used
+    func getUsageCount(for shortcut: String) -> Int {
+        return usageCounts[shortcut] ?? 0
+    }
+
+    // MARK: - Persistence
+
+    private func loadUsageCounts() {
+        if let data = UserDefaults.standard.data(forKey: usageCountsKey),
+           let counts = try? JSONDecoder().decode([String: Int].self, from: data) {
+            usageCounts = counts
+        }
+    }
+
+    private func saveUsageCounts() {
+        if let data = try? JSONEncoder().encode(usageCounts) {
+            UserDefaults.standard.set(data, forKey: usageCountsKey)
+        }
     }
 }

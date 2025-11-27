@@ -272,7 +272,7 @@ class TextReplacementService: ObservableObject {
             autocompletePrefix = ":" + String(afterColon)
 
             if autocompletePrefix == ":" {
-                suggestions = EmojiRegistry.shared.getAllShortcuts()
+                suggestions = EmojiRegistry.shared.getShortcutsSortedByUsage()
                     .prefix(10)
                     .compactMap { shortcode in
                         guard let emoji = EmojiRegistry.shared.getEmoji(for: shortcode) else { return nil }
@@ -280,7 +280,7 @@ class TextReplacementService: ObservableObject {
                     }
             } else {
                 let lowercasePrefix = autocompletePrefix.lowercased()
-                suggestions = EmojiRegistry.shared.getAllShortcuts()
+                suggestions = EmojiRegistry.shared.getShortcutsSortedByUsage()
                     .filter { $0.lowercased().hasPrefix(lowercasePrefix) }
                     .prefix(10)
                     .compactMap { shortcode in
@@ -355,6 +355,10 @@ class TextReplacementService: ObservableObject {
             }
 
             self.currentBuffer.append(suggestion.emoji)
+
+            // Record usage for ranking
+            EmojiRegistry.shared.recordUsage(for: suggestion.shortcode)
+
             self.hideAutocomplete()
         }
     }
@@ -388,6 +392,9 @@ class TextReplacementService: ObservableObject {
         }
 
         currentBuffer.append(emoji)
+
+        // Record usage for ranking
+        EmojiRegistry.shared.recordUsage(for: shortcut)
     }
 
     // MARK: - System Integration
