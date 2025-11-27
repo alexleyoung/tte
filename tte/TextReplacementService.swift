@@ -279,8 +279,9 @@ class TextReplacementService: ObservableObject {
                         return EmojiSuggestion(shortcode: shortcode, emoji: emoji)
                     }
             } else {
+                let lowercasePrefix = autocompletePrefix.lowercased()
                 suggestions = EmojiRegistry.shared.getAllShortcuts()
-                    .filter { $0.hasPrefix(autocompletePrefix) }
+                    .filter { $0.lowercased().hasPrefix(lowercasePrefix) }
                     .prefix(10)
                     .compactMap { shortcode in
                         guard let emoji = EmojiRegistry.shared.getEmoji(for: shortcode) else { return nil }
