@@ -220,10 +220,41 @@ class TextReplacementService: ObservableObject {
             }
 
             if char == "\u{7F}" {
-                if !currentBuffer.isEmpty {
-                    currentBuffer.removeLast()
-                    if autocompleteActive {
-                        updateAutocomplete()
+                // Check for modifier keys to handle word/line deletions
+                let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+                if modifiers.contains(.command) {
+                    // Command+Delete deletes to beginning of line - clear entire buffer
+                    currentBuffer = ""
+                    hideAutocomplete()
+                } else if modifiers.contains(.option) {
+                    // Option+Delete deletes previous word - remove last word from buffer
+                    if !currentBuffer.isEmpty {
+                        // Remove trailing whitespace first
+                        while currentBuffer.last?.isWhitespace == true {
+                            currentBuffer.removeLast()
+                            if currentBuffer.isEmpty { break }
+                        }
+                        // Remove the word (but stop at colon to preserve autocomplete trigger)
+                        while !currentBuffer.isEmpty && currentBuffer.last != ":" && currentBuffer.last?.isWhitespace == false {
+                            currentBuffer.removeLast()
+                        }
+                        // Keep autocomplete active and update it
+                        if autocompleteActive {
+                            if currentBuffer.isEmpty || !currentBuffer.contains(":") {
+                                hideAutocomplete()
+                            } else {
+                                updateAutocomplete()
+                            }
+                        }
+                    }
+                } else {
+                    // Regular delete - remove single character
+                    if !currentBuffer.isEmpty {
+                        currentBuffer.removeLast()
+                        if autocompleteActive {
+                            updateAutocomplete()
+                        }
                     }
                 }
                 continue
