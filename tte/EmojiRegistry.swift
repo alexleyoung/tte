@@ -91,7 +91,7 @@ class EmojiRegistry {
         ":sleeping:": "😴",
         ":drooling_face:": "🤤",
         ":sleepy:": "😪",
-        ":dizzy_face:": "😵",
+        ":dizzy_face:": "😵‍💫",
         ":zipper_mouth:": "🤐",
         ":woozy_face:": "🥴",
         ":nauseated_face:": "🤢",
