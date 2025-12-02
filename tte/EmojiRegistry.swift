@@ -239,6 +239,7 @@ class EmojiRegistry {
         ":cake:": "🍰",
         ":birthday:": "🎂",
         ":cookie:": "🍪",
+        ":wilted_rose:": "🥀",
 
         // Gestures (additional)
         ":ok:": "🆗",
