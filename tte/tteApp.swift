@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import Carbon
 
 @main
 struct tteApp: App {
@@ -30,6 +31,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var cancellables = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Initialize the EmojiRegistry singleton
+        _ = EmojiRegistry.shared
+
         // Initialize the TextReplacementService singleton to set up global event tap
         _ = TextReplacementService.shared
 
@@ -84,11 +88,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem(title: "Open TTE", action: #selector(togglePopover), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Reload Emoji Registry", action: #selector(reloadEmojis), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Show Emoji File in Finder", action: #selector(showEmojiFile), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit TTE", action: #selector(quitApp), keyEquivalent: "q"))
 
         statusItem?.menu = menu
         statusItem?.button?.performClick(nil)
         statusItem?.menu = nil
+    }
+
+    @objc func reloadEmojis() {
+        EmojiRegistry.shared.reloadEmojis()
+        print("Emoji registry reloaded from: \(EmojiRegistry.shared.getEmojiFilePath())")
+    }
+
+    @objc func showEmojiFile() {
+        let filePath = EmojiRegistry.shared.getEmojiFilePath()
+        let url = URL(fileURLWithPath: filePath)
+        NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: url.deletingLastPathComponent().path)
     }
 
     @objc func quitApp() {
